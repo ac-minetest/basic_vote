@@ -20,15 +20,16 @@ basic_vote.execute = function(type, name, reason)
 			minetest.kick_player(name, reason)
 		elseif type ==1 then
 			local privs = core.get_player_privs(name)
-			privs['interact'] = false
+			privs.interact = false
 			core.set_player_privs(name, privs)
+			minetest.auth_reload()
 		elseif type ==2 then
 			local privs = core.get_player_privs(name)
-			privs['interact'] = true
+			privs.interact = true
 			core.set_player_privs(name, privs)
+			minetest.auth_reload()
 		end
 end
-
 
 
 minetest.register_chatcommand("vote", { 
@@ -69,7 +70,7 @@ basic_vote.update = function()
 	local count = #players;
 
 	if basic_vote.state == 2 then -- timeout
-		minetest.chat_send_all("##VOTE failed. "..math.ceil(100*basic_vote.votes/count) .."% voted with score "..basic_vote.score .. " (needed 0)");
+		minetest.chat_send_all("##VOTE failed. ".. basic_vote.votes .." voted (needed ".. 0.5*count ..") with score "..basic_vote.score .. " (needed 0)");
 		basic_vote.state = 0;basic_vote.vote = {time = 0,type = 0, name = "", reason = ""}; return 
 	end
 	if basic_vote.state~=1 then return end -- no vote in progress
