@@ -82,6 +82,10 @@ minetest.register_chatcommand("vote", {
 		
 		--check if target valid player
 		if not minetest.get_player_by_name(basic_vote.vote.name) then return end
+		if cheat and cheat.cheater and basic_vote.vote.type~=2 then -- #anticheat mod: makes detected cheater more succeptible to voting
+			basic_vote.vote.votes_needed=1;
+			name = "#anticheat"; -- so cheater does not see who voted
+		end
 		
 		basic_vote.votes = 0;basic_vote.score = 0;basic_vote.voters = {};
 		
