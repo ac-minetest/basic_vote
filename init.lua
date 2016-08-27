@@ -82,8 +82,8 @@ minetest.register_chatcommand("vote", {
 		
 		--check if target valid player
 		if not minetest.get_player_by_name(basic_vote.vote.name) then return end
-		if cheat and cheat.cheater and basic_vote.vote.type~=2 then -- #anticheat mod: makes detected cheater more succeptible to voting
-			basic_vote.vote.votes_needed=1;
+		if anticheatNAME and basic_vote.vote.type~=2 then -- #anticheat mod: makes detected cheater more succeptible to voting
+			basic_vote.vote.votes_needed=0;
 			name = "#anticheat"; -- so cheater does not see who voted
 		end
 		
@@ -122,7 +122,7 @@ basic_vote.update = function()
 	if basic_vote.state~=1 then return end -- no vote in progress
 	
 	if basic_vote.votes>votes_needed and basic_vote.score>0 then  -- enough voters and score, vote succeeds
-		minetest.chat_send_all("##VOTE succeded. "..math.ceil(100*basic_vote.votes/count) .."% voted with score "..basic_vote.score .. " (needed 0)");
+		minetest.chat_send_all("##VOTE succeded. "..basic_vote.votes .." voted with score "..basic_vote.score .. " (needed 0)");
 		local type = basic_vote.vote.type;
                 basic_vote.execute(basic_vote.vote.type,basic_vote.vote.name, basic_vote.vote.reason)
 		basic_vote.state = 0;basic_vote.vote = {time = 0,type = 0, name = "", reason = ""};
