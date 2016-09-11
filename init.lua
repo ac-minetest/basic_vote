@@ -1,4 +1,4 @@
--- basic vote by rnd
+-- basic vote by rnd, 2015
 
 local basic_vote = {};
 
@@ -7,11 +7,36 @@ local basic_vote = {};
 -- DEFINE VOTE TYPES
 basic_vote.types = { -- [type] = { description , votes_needed , timeout}
 
-[0] = {"kick" , -4 , 30},                -- -4 means at least 4 players need to vote
+[0] = {"kick" , -3 , 30},                -- -3 means strictly more than 3 players need to vote ( so 4 or more)
 [1] = {"remove interact of" , 0.5, 120}, -- 0.5 means at least 50% need to vote
 [2] = {"give interact to" , 0.5 , 120},
-[3] = {"kill" , -4 , 30},
+[3] = {"kill" , -3 , 30},
+[4] = {"poison" , -2 , 30},
+[5] = {"teleport to me" , -3 , 30},
 };
+
+-- needed for poison vote
+local vote_poison_state = {};
+basic_vote_poison = function(player)
+	if not player then return end
+	local name = player:get_player_name();
+	if not vote_poison_state[name] then
+		vote_poison_state[name] = 60;
+	end
+	
+	vote_poison_state[name] = vote_poison_state[name] - 1;
+	if vote_poison_state[name]<=0 then 
+		vote_poison_state[name] = nil; return;
+	end
+	
+	if player:get_hp()>0 then 
+		player:set_hp(player:get_hp()-4);
+	end
+	
+	minetest.after(2, function() basic_vote_poison(player) end)
+
+end
+
 
 -- DEFINE WHAT HAPPENS WHEN VOTE SUCCEEDS
 basic_vote.execute = function(type, name, reason) 
@@ -35,9 +60,25 @@ basic_vote.execute = function(type, name, reason)
 		local player = minetest.get_player_by_name(name); if not player then return end
 		player:set_hp(0);
 		
+	elseif type == 4 then
+		
+		local player = minetest.get_player_by_name(name); if not player then return end
+		if not vote_poison_state[name] then
+			basic_vote_poison(player);
+		end
+
+	elseif type == 5 then
+		
+		local player = minetest.get_player_by_name(name); if not player then return end
+		local vname = basic_vote.vote.voter; local vplayer = minetest.get_player_by_name(vname);
+		if not vplayer then return end
+		player:setpos(vplayer:getpos());
+		
 	end
 
 end
+
+
 
 -- END OF SETTINGS ---------------------------------------------------------------
 
@@ -75,6 +116,7 @@ minetest.register_chatcommand("vote", {
 		basic_vote.vote.time = minetest.get_gametime();
 		basic_vote.vote.type = tonumber(paramt[1]);
 		basic_vote.vote.name=paramt[2] or "";
+		basic_vote.vote.voter = name;
 		basic_vote.vote.reason = paramt[3]
 		basic_vote.vote.votes_needed =  basic_vote.types[ basic_vote.vote.type ][2];
 		basic_vote.vote.timeout = basic_vote.types[ basic_vote.vote.type ][3];
@@ -118,13 +160,13 @@ basic_vote.update = function()
 	end
 	
 	if basic_vote.state == 2 then -- timeout
-		minetest.chat_send_all("##VOTE failed. ".. basic_vote.votes .." voted (needed ".. votes_needed ..") with score "..basic_vote.score .. " (needed 0)");
+		minetest.chat_send_all("##VOTE failed. ".. basic_vote.votes .." voted (needed more than ".. votes_needed ..") with score "..basic_vote.score .. " (needed more than 0)");
 		basic_vote.state = 0;basic_vote.vote = {time = 0,type = 0, name = "", reason = ""}; return 
 	end
 	if basic_vote.state~=1 then return end -- no vote in progress
 	
 	if basic_vote.votes>votes_needed and basic_vote.score>0 then  -- enough voters and score, vote succeeds
-		minetest.chat_send_all("##VOTE succeded. "..basic_vote.votes .." voted with score "..basic_vote.score .. " (needed 0)");
+		minetest.chat_send_all("##VOTE succeded. "..basic_vote.votes .." voted with score "..basic_vote.score .. " (needed more than 0)");
 		local type = basic_vote.vote.type;
                 basic_vote.execute(basic_vote.vote.type,basic_vote.vote.name, basic_vote.vote.reason)
 		basic_vote.state = 0;basic_vote.vote = {time = 0,type = 0, name = "", reason = ""};
