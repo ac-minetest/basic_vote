@@ -17,9 +17,10 @@ basic_vote.types = { -- [type] = { description , votes_needed , timeout}
 
 -- needed for poison vote
 local vote_poison_state = {};
-basic_vote_poison = function(player)
-	if not player then return end
-	local name = player:get_player_name();
+basic_vote_poison = function(name)
+	
+	local player = minetest.get_player_by_name(name);
+	
 	if not vote_poison_state[name] then
 		vote_poison_state[name] = 60;
 	end
@@ -29,11 +30,13 @@ basic_vote_poison = function(player)
 		vote_poison_state[name] = nil; return;
 	end
 	
-	if player:get_hp()>0 then 
-		player:set_hp(player:get_hp()-4);
+	if player then
+		if player:get_hp()>0 then 
+			player:set_hp(player:get_hp()-4);
+		end
 	end
 	
-	minetest.after(2, function() basic_vote_poison(player) end)
+	minetest.after(2, function() basic_vote_poison(name) end)
 
 end
 
@@ -64,7 +67,7 @@ basic_vote.execute = function(type, name, reason)
 		
 		local player = minetest.get_player_by_name(name); if not player then return end
 		if not vote_poison_state[name] then
-			basic_vote_poison(player);
+			basic_vote_poison(name);
 		end
 
 	elseif type == 5 then
