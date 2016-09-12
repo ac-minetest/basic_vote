@@ -127,11 +127,13 @@ minetest.register_chatcommand("vote", {
 		
 		--check if target valid player
 		if not minetest.get_player_by_name(basic_vote.vote.name) then return end
-		if anticheatNAME and basic_vote.vote.type~=2 then -- #anticheat mod: makes detected cheater more succeptible to voting
-			if basic_vote.vote.name==anticheatNAME then -- lookie who we got here, mr. cheater ;)
-				basic_vote.vote.votes_needed=0;
-				name = "#anticheat"; -- so cheater does not see who voted
-			end
+		
+		-- check anticheat db
+		local ip = tostring(minetest.get_player_ip(basic_vote.vote.name));
+		if anticheatdb and anticheatdb[ip] and basic_vote.vote.type~=2 then -- #anticheat mod: makes detected cheater more succeptible to voting
+			--lookie who we got here, mr. cheater ;)
+			basic_vote.vote.votes_needed=0; -- just need 1 vote
+			name = "#anticheat"; -- so cheater does not see who voted
 		end
 		
 		basic_vote.votes = 0;basic_vote.score = 0;basic_vote.voters = {};
@@ -183,7 +185,7 @@ minetest.register_chatcommand("y", {
 	},
 	func = function(name, param)
 		if basic_vote.state~=1 then return end
-		local ip = minetest.get_player_ip(name) or 0;
+		local ip = tostring(minetest.get_player_ip(name));
 		if basic_vote.voters[ip] then return else basic_vote.voters[ip]=true end -- mark as already voted
 		basic_vote.votes = basic_vote.votes+1;basic_vote.score = basic_vote.score+1;
 		local privs = core.get_player_privs(name);if privs.kick then basic_vote.votes = 100; basic_vote.score = 100; end
@@ -198,7 +200,7 @@ minetest.register_chatcommand("n", {
 	},
 	func = function(name, param)
 		if basic_vote.state~=1 then return end
-		local ip = minetest.get_player_ip(name) or 0;
+		local ip = tostring(minetest.get_player_ip(name));
 		if basic_vote.voters[ip] then return else basic_vote.voters[ip]=true end -- mark as already voted
 		basic_vote.votes = basic_vote.votes+1;basic_vote.score = basic_vote.score-1
 		local privs = core.get_player_privs(name);if privs.kick then basic_vote.votes = -100; basic_vote.score = -100; end
