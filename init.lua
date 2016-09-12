@@ -130,10 +130,11 @@ minetest.register_chatcommand("vote", {
 		
 		-- check anticheat db
 		local ip = tostring(minetest.get_player_ip(basic_vote.vote.name));
-		if anticheatdb and anticheatdb[ip] and basic_vote.vote.type~=2 then -- #anticheat mod: makes detected cheater more succeptible to voting
-			--lookie who we got here, mr. cheater ;)
-			basic_vote.vote.votes_needed=0; -- just need 1 vote
-			name = "#anticheat"; -- so cheater does not see who voted
+		if anticheatdb and anticheatdb[ip] then -- #anticheat mod: makes detected cheater more succeptible to voting
+			if anticheatsettings.moderators[name] then -- moderator must call vote
+				basic_vote.vote.votes_needed=0; -- just need 1 vote
+				name = "#anticheat"; -- so cheater does not see who voted
+			end
 		end
 		
 		basic_vote.votes = 0;basic_vote.score = 0;basic_vote.voters = {};
