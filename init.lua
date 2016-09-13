@@ -148,7 +148,7 @@ minetest.register_chatcommand("vote", {
 		
 		
 		--check if target valid player
-		if not minetest.get_player_by_name(basic_vote.vote.name) then return end
+		if not minetest.get_player_by_name(basic_vote.vote.name) and basic_vote.vote.type~= 1 then return end
 		
 		-- check anticheat db
 		local ip = tostring(minetest.get_player_ip(basic_vote.vote.name));
