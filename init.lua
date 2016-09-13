@@ -7,13 +7,14 @@ local basic_vote = {};
 -- DEFINE VOTE TYPES
 basic_vote.types = { -- [type] = { description , votes_needed , timeout}
 
-[0] = {"kick" , -3 , 30},                -- -3 means strictly more than 3 players need to vote ( so 4 or more)
+[0] = {"ban for 2 minutes" , -3 , 30},                -- -3 means strictly more than 3 players need to vote ( so 4 or more)
 [1] = {"remove interact of" , 0.5, 120}, -- 0.5 means at least 50% need to vote
 [2] = {"give interact to" , 0.5 , 120},
 [3] = {"kill" , -3 , 30},
-[4] = {"poison" , -2 , 30},
+[4] = {"poison" , -3 , 30},
 [5] = {"teleport to me" , -3 , 30},
 };
+basic_vote.modreq = 2; -- more that this number of moderators from "anticheat" mod must vote for mod to succeed
 
 -- needed for poison vote
 local vote_poison_state = {};
@@ -40,12 +41,14 @@ basic_vote_poison = function(name)
 
 end
 
+basic_vote.kicklist = {};
 
 -- DEFINE WHAT HAPPENS WHEN VOTE SUCCEEDS
 basic_vote.execute = function(type, name, reason) 
 
 	if type == 0 then
-	
+		local ip = tostring(minetest.get_player_ip(name));
+		basic_vote.kicklist[ip] = minetest.get_gametime(); -- remembers start time
 		minetest.kick_player(name, reason)
 			
 	elseif type == 1 then
@@ -81,12 +84,31 @@ basic_vote.execute = function(type, name, reason)
 
 end
 
+minetest.register_on_prejoinplayer(
+	function(name, ip)
+		local name;
+		if basic_vote.kicklist[ip] then 
+			
+			local t = minetest.get_gametime();
+			t=t-basic_vote.kicklist[ip];
+			minetest.chat_send_all("t remaining " .. t)
+			if t>120 then 
+				basic_vote.kicklist[ip] = nil;
+			else
+				return "You have been banned from the server."
+			end
+		end
+		
+	end
+)
+
+
 
 
 -- END OF SETTINGS ---------------------------------------------------------------
 
 basic_vote.votes = 0; -- vote count
-basic_vote.score = 0; -- vote score, if >0 vote succeeds
+basic_vote.modscore = 0; -- how many moderators voted - need 3 for vote to succeed
 basic_vote.voters = {}; -- who voted already
 basic_vote.state = 0; -- 0 no vote, 1 vote in progress,2 timeout
 basic_vote.vote = {time = 0,type = 0, name = "", reason = "", votes_needed = 0, timeout = 0, description = ""}; -- description of current vote
@@ -96,6 +118,7 @@ basic_vote.requirements = {[0]=0}
 basic_vote.vote_desc=""; for i,v in pairs(basic_vote.types) do basic_vote.vote_desc = basic_vote.vote_desc .. " type ".. i .. ": ".. v[1]..", " end
 
 
+-- starts a new vote
 minetest.register_chatcommand("vote", { 
 	privs = {
 		interact = true
@@ -133,13 +156,13 @@ minetest.register_chatcommand("vote", {
 		if anticheatdb and anticheatdb[ip] then -- #anticheat mod: makes detected cheater more succeptible to voting
 			if anticheatsettings.moderators[name] then -- moderator must call vote
 				basic_vote.vote.votes_needed=0; -- just need 1 vote
-				name = "#anticheat"; -- so cheater does not see who voted
+				name = "#anticheat"; -- so cheater does not see who voted - anonymous vote
 			end
 		end
 		
-		basic_vote.votes = 0;basic_vote.score = 0;basic_vote.voters = {};
+		basic_vote.votes = 0; basic_vote.modscore = 0; basic_vote.voters = {};
 		
-		basic_vote.vote.description = "## VOTE (by ".. name ..") to ".. (basic_vote.types[basic_vote.vote.type][1] or "") .. " " .. (basic_vote.vote.name or "") .. " because " .. (basic_vote.vote.reason or "").. " ##\nsay /y or /n to vote. Timeout in ".. basic_vote.vote.timeout  .. "s.";
+		basic_vote.vote.description = "## VOTE (by ".. name ..") to ".. (basic_vote.types[basic_vote.vote.type][1] or "") .. " " .. (basic_vote.vote.name or "") .. " because " .. (basic_vote.vote.reason or "").. " ##\nsay /y to vote. Timeout in ".. basic_vote.vote.timeout  .. "s.";
 		
 		minetest.chat_send_all(basic_vote.vote.description);
 		basic_vote.state = 1; minetest.after(basic_vote.vote.timeout, function() 
@@ -149,12 +172,13 @@ minetest.register_chatcommand("vote", {
 	}
 )
 
-
+-- check if enough votes for vote to succeed or fail vote if timeout
 basic_vote.update = function()
 	local players=minetest.get_connected_players();
 	local count = #players;
 
 	local votes_needed;
+	
 	if basic_vote.vote.votes_needed>0 then
 		votes_needed = basic_vote.vote.votes_needed*count; -- percent of all players
 		if basic_vote.vote.votes_needed>=0.5 then -- more serious vote, to prevent ppl voting serious stuff with few players on server, at least 6 votes needed
@@ -166,13 +190,19 @@ basic_vote.update = function()
 	end
 	
 	if basic_vote.state == 2 then -- timeout
-		minetest.chat_send_all("##VOTE failed. ".. basic_vote.votes .." voted (needed more than ".. votes_needed ..") with score "..basic_vote.score .. " (needed more than 0)");
+		minetest.chat_send_all("##VOTE failed. ".. basic_vote.votes .." voted (needed more than ".. votes_needed ..")");
 		basic_vote.state = 0;basic_vote.vote = {time = 0,type = 0, name = "", reason = ""}; return 
 	end
 	if basic_vote.state~=1 then return end -- no vote in progress
 	
-	if basic_vote.votes>votes_needed and basic_vote.score>0 then  -- enough voters and score, vote succeeds
-		minetest.chat_send_all("##VOTE succeded. "..basic_vote.votes .." voted with score "..basic_vote.score .. " (needed more than 0)");
+	-- check if enough votes
+	
+	if basic_vote.modscore> basic_vote.modreq then -- enough moderators voted for vote to succeed
+		basic_vote.votes = votes_needed+1;
+	end
+	
+	if basic_vote.votes>votes_needed then  -- enough voters
+		minetest.chat_send_all("##VOTE succeded. "..basic_vote.votes .." voted ");
 		local type = basic_vote.vote.type;
                 basic_vote.execute(basic_vote.vote.type,basic_vote.vote.name, basic_vote.vote.reason)
 		basic_vote.state = 0;basic_vote.vote = {time = 0,type = 0, name = "", reason = ""};
@@ -180,32 +210,24 @@ basic_vote.update = function()
 	end
 end
 
+local cast_vote = function (name,param)
+	if basic_vote.state~=1 then return end -- vote not in progress
+		local ip = tostring(minetest.get_player_ip(name));
+		if basic_vote.voters[ip] then return else basic_vote.voters[ip]=true end -- mark as already voted
+		basic_vote.votes = basic_vote.votes+1;
+		if anticheatsettings and anticheatsettings.moderators[name] then -- moderator from anticheat mod
+			basic_vote.modscore=basic_vote.modscore+1;
+		end
+		local privs = core.get_player_privs(name);if privs.kick then basic_vote.votes = 100; end
+		basic_vote.update(); minetest.chat_send_player(name,"vote received");
+end
+
 minetest.register_chatcommand("y", { 
 	privs = {
 		interact = true
 	},
 	func = function(name, param)
-		if basic_vote.state~=1 then return end
-		local ip = tostring(minetest.get_player_ip(name));
-		if basic_vote.voters[ip] then return else basic_vote.voters[ip]=true end -- mark as already voted
-		basic_vote.votes = basic_vote.votes+1;basic_vote.score = basic_vote.score+1;
-		local privs = core.get_player_privs(name);if privs.kick then basic_vote.votes = 100; basic_vote.score = 100; end
-		basic_vote.update(); minetest.chat_send_player(name,"vote received");
-	end
-	}
-)
-
-minetest.register_chatcommand("n", { 
-	privs = {
-		interact = true
-	},
-	func = function(name, param)
-		if basic_vote.state~=1 then return end
-		local ip = tostring(minetest.get_player_ip(name));
-		if basic_vote.voters[ip] then return else basic_vote.voters[ip]=true end -- mark as already voted
-		basic_vote.votes = basic_vote.votes+1;basic_vote.score = basic_vote.score-1
-		local privs = core.get_player_privs(name);if privs.kick then basic_vote.votes = -100; basic_vote.score = -100; end
-		basic_vote.update();minetest.chat_send_player(name,"vote received");
+		cast_vote(name,param)
 	end
 	}
 )
