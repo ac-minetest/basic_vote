@@ -91,7 +91,6 @@ minetest.register_on_prejoinplayer(
 			
 			local t = minetest.get_gametime();
 			t=t-basic_vote.kicklist[ip];
-			minetest.chat_send_all("t remaining " .. t)
 			if t>120 then 
 				basic_vote.kicklist[ip] = nil;
 			else
