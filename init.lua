@@ -150,7 +150,7 @@ minetest.register_chatcommand("vote", {
 		basic_vote.vote.type = tonumber(paramt[1]);
 		basic_vote.vote.name=paramt[2] or "an unknown player";
 		basic_vote.vote.voter = name;
-		basic_vote.vote.reason = paramt[3]
+		basic_vote.vote.reason = string.match(param, "%w+ [%w_-]+ (.+)")
 		basic_vote.vote.votes_needed =  basic_vote.types[ basic_vote.vote.type ][2];
 		basic_vote.vote.timeout = basic_vote.types[ basic_vote.vote.type ][3];
 		
