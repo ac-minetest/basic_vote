@@ -116,7 +116,7 @@ basic_vote.vote = {time = 0,type = 0, name = "", reason = "", votes_needed = 0, 
 basic_vote.requirements = {[0]=0}
 basic_vote.vote_desc=""
 for i=1,#basic_vote.types do
-	basic_vote.vote_desc = basic_vote.vote_desc .. "Type ".. i .. ": ".. basic_vote.types[i][5].."\n"
+	basic_vote.vote_desc = basic_vote.vote_desc .. "Type " .. i .. " (" ..basic_vote.types[i][4].. "): ".. basic_vote.types[i][5].."\n"
 end
 
 -- starts a new vote
@@ -144,10 +144,19 @@ minetest.register_chatcommand("vote", {
 		
 		
 		if paramt[1] == "types" then minetest.chat_send_player(name, basic_vote.vote_desc) return end
-		if not basic_vote.types[ tonumber(paramt[1]) ] then minetest.chat_send_player(name,"Error: Invalid syntax or type. Use “/help vote” for help.") return end
 		
 		basic_vote.vote.time = minetest.get_gametime();
 		basic_vote.vote.type = tonumber(paramt[1]);
+		-- check for text-based types
+		if basic_vote.vote.type == nil then
+			for i=1,#basic_vote.types do
+				if paramt[1] == basic_vote.types[i][4] then
+					basic_vote.vote.type = i
+				end
+			end
+		end
+		if not basic_vote.vote.type then minetest.chat_send_player(name,"Error: Invalid syntax or type. Use “/help vote” for help.") return end
+
 		basic_vote.vote.name=paramt[2] or "an unknown player";
 		basic_vote.vote.voter = name;
 		basic_vote.vote.reason = string.match(param, "%w+ [%w_-]+ (.+)")
