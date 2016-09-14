@@ -110,13 +110,23 @@ basic_vote.votes = 0; -- vote count
 basic_vote.modscore = 0; -- how many moderators voted - need 3 for vote to succeed
 basic_vote.voters = {}; -- who voted already
 basic_vote.state = 0; -- 0 no vote, 1 vote in progress,2 timeout
-basic_vote.vote = {time = 0,type = 0, name = "", reason = "", votes_needed = 0, timeout = 0, description = ""}; -- description of current vote
+basic_vote.vote = {time = 0,type = 0, name = "", reason = "", votes_needed = 0, timeout = 0, }; -- description of current vote
 
 
 basic_vote.requirements = {[0]=0}
 basic_vote.vote_desc=""
 for i=1,#basic_vote.types do
 	basic_vote.vote_desc = basic_vote.vote_desc .. "Type " .. i .. " (" ..basic_vote.types[i][4].. "): ".. basic_vote.types[i][5].."\n"
+end
+
+local function get_description(vote)
+	local type_str = string.format(basic_vote.types[basic_vote.vote.type][1], basic_vote.vote.name)
+	local timeout = math.max(0, vote.timeout - os.difftime(os.time(), vote.time_start))
+	if vote.reason == nil or vote.reason == "" then
+		return string.format("## VOTE by %s to %s. Timeout in %ds.", vote.voter, type_str, timeout)
+	else
+		return string.format("## VOTE by %s to %s with reason: “%s”. Timeout in %ds.", vote.voter, type_str, vote.reason, timeout)
+	end
 end
 
 -- starts a new vote
@@ -130,7 +140,7 @@ minetest.register_chatcommand("vote", {
 		
 		if basic_vote.state~=0 then 
 			minetest.chat_send_player(name,"Vote already in progress:") 
-			minetest.chat_send_player(name,basic_vote.vote.description);
+			minetest.chat_send_player(name,get_description(basic_vote.vote));
 			return 
 		elseif param == "" then
 			minetest.chat_send_player(name,"No vote in progress.")
@@ -162,6 +172,7 @@ minetest.register_chatcommand("vote", {
 		basic_vote.vote.reason = string.match(param, "%w+ [%w_-]+ (.+)")
 		basic_vote.vote.votes_needed =  basic_vote.types[ basic_vote.vote.type ][2];
 		basic_vote.vote.timeout = basic_vote.types[ basic_vote.vote.type ][3];
+		basic_vote.vote.time_start = os.time();
 		
 		
 		--check if target valid player
@@ -187,12 +198,11 @@ minetest.register_chatcommand("vote", {
 		local type_str = string.format(basic_vote.types[basic_vote.vote.type][1], basic_vote.vote.name)
 
 		if basic_vote.vote.reason == nil or basic_vote.vote.reason == "" then
-			basic_vote.vote.description = string.format("## VOTE started (by %s to %s).\nSay “/y” to vote “yes”. Timeout in %ds.", name, type_str, basic_vote.vote.timeout)
+			minetest.chat_send_all(string.format("## VOTE started (by %s to %s).\nSay “/y” to vote “yes”. Timeout in %ds.", name, type_str, basic_vote.vote.timeout))
 		else
-			basic_vote.vote.description = string.format("## VOTE started (by %s to %s) with reason: “%s”.\nSay “/y” to vote “yes”. Timeout in %ds.", name, type_str, basic_vote.vote.reason, basic_vote.vote.timeout)
+			minetest.chat_send_all(string.format("## VOTE started (by %s to %s) with reason: “%s”.\nSay “/y” to vote “yes”. Timeout in %ds.", name, type_str, basic_vote.vote.reason, basic_vote.vote.timeout))
 		end
 
-		minetest.chat_send_all(basic_vote.vote.description);
 		basic_vote.state = 1; minetest.after(basic_vote.vote.timeout, function() 
 			if basic_vote.state == 1 then basic_vote.state = 2;basic_vote.update(); end
 		end)
