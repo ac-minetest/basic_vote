@@ -10,9 +10,13 @@ basic_vote.types = { -- [type] = { description , votes_needed , timeout}
 [0] = {"ban for 2 minutes" , -3 , 30},                -- -3 means strictly more than 3 players need to vote ( so 4 or more)
 [1] = {"remove interact of" , 0.5, 120}, -- 0.5 means at least 50% need to vote
 [2] = {"give interact to" , 0.5 , 120},
-[3] = {"kill" , -3 , 30},
-[4] = {"poison" , -3 , 30},
+[3] = {"kill because" , -3 , 30},
+[4] = {"poison because" , -3 , 30},
 [5] = {"teleport to me" , -3 , 30},
+[6] = {"change name color of",-2,30},
+[7] = {"mutelate",-2,30},
+[8] = {"unmutelate",-2,30},
+[9] = {"ask",0.5,30}
 };
 basic_vote.modreq = 2; -- more that this number of moderators from "anticheat" mod must vote for mod to succeed
 
@@ -42,6 +46,19 @@ basic_vote_poison = function(name)
 end
 
 basic_vote.kicklist = {};
+basic_vote.talklist = {};
+
+-- for hud votes
+
+local hud_definition =
+{
+	hud_elem_type = "image",
+	scale = {x=-50,y=-50},
+	text = "default_stone.png",
+	size = { x=50, y=50 },
+	offset = { x=0, y=0},
+}
+
 
 -- DEFINE WHAT HAPPENS WHEN VOTE SUCCEEDS
 basic_vote.execute = function(type, name, reason) 
@@ -80,10 +97,27 @@ basic_vote.execute = function(type, name, reason)
 		if not vplayer then return end
 		player:setpos(vplayer:getpos());
 		
+	elseif type == 6 then
+		
+		local player = minetest.get_player_by_name(name); if not player then return end
+		player:set_nametag_attributes({color = basic_vote.vote.reason});
+		
+	elseif type == 7 then
+		local player = minetest.get_player_by_name(name); if not player then return end
+		basic_vote.talklist[name]=1;
+		
+	elseif type == 8 then
+		local player = minetest.get_player_by_name(name); if not player then return end
+		basic_vote.talklist[name]=nil;
+	
+	elseif type == 9 then
+		basic_vote.huds[name]=player:hud_add(hud_definition);
+		
 	end
 
 end
 
+-- for ban vote
 minetest.register_on_prejoinplayer(
 	function(name, ip)
 		local name;
@@ -100,6 +134,28 @@ minetest.register_on_prejoinplayer(
 		
 	end
 )
+
+-- for talking votes
+
+minetest.register_on_chat_message(
+	function(name, message)
+		
+		
+		if basic_vote.talklist[name] then
+			if basic_vote.talklist[name] == 1 then -- kill
+				local player = minetest.get_player_by_name(name);
+				if not player then return end
+				if not player:get_inventory():is_empty("main") then
+					minetest.chat_send_all("<" .. name .. "> please come get my bones at " .. minetest.pos_to_string(player:getpos()))
+				end
+				player:set_hp(0);			
+				return true
+			end
+		end
+
+	end
+)
+
 
 
 
