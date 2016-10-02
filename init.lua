@@ -10,8 +10,8 @@ basic_vote.types = { -- [type] = { description , votes_needed , timeout}
 [0] = {"ban for 2 minutes" , -3 , 30},                -- -3 means strictly more than 3 players need to vote ( so 4 or more)
 [1] = {"remove interact of" , 0.5, 120}, -- 0.5 means at least 50% need to vote
 [2] = {"give interact to" , 0.5 , 120},
-[3] = {"kill because" , -3 , 30},
-[4] = {"poison because" , -3 , 30},
+[3] = {"kill" , -3 , 30},
+[4] = {"poison" , -3 , 30},
 [5] = {"teleport to me" , -3 , 30},
 [6] = {"change name color of",-2,30},
 [7] = {"mutelate",-2,30},
