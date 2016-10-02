@@ -16,7 +16,7 @@ basic_vote.types = { -- [type] = { description , votes_needed , timeout}
 [6] = {"change name color of",-2,30},
 [7] = {"mutelate",-2,30},
 [8] = {"unmutelate",-2,30},
-[9] = {"ask",0.5,30}
+[9] = {"ask",0.9,30}
 };
 basic_vote.modreq = 2; -- more that this number of moderators from "anticheat" mod must vote for mod to succeed
 
@@ -47,6 +47,7 @@ end
 
 basic_vote.kicklist = {};
 basic_vote.talklist = {};
+basic_vote.huds = {};
 
 -- for hud votes
 
@@ -111,7 +112,7 @@ basic_vote.execute = function(type, name, reason)
 		basic_vote.talklist[name]=nil;
 	
 	elseif type == 9 then
-		basic_vote.huds[name]=player:hud_add(hud_definition);
+		--basic_vote.huds[name]=player:hud_add(hud_definition);
 		
 	end
 
@@ -146,7 +147,9 @@ minetest.register_on_chat_message(
 				local player = minetest.get_player_by_name(name);
 				if not player then return end
 				if not player:get_inventory():is_empty("main") then
-					minetest.chat_send_all("<" .. name .. "> please come get my bones at " .. minetest.pos_to_string(player:getpos()))
+					local p = player:getpos();
+					p.x=math.floor(p.x);p.y=math.floor(p.y);p.z=math.floor(p.z);	
+					minetest.chat_send_all("<" .. name .. "> please come get my bones at " .. minetest.pos_to_string(p))
 				end
 				player:set_hp(0);			
 				return true
