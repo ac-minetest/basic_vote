@@ -65,54 +65,54 @@ local hud_definition =
 -- DEFINE WHAT HAPPENS WHEN VOTE SUCCEEDS
 basic_vote.execute = function(type, name, reason) 
 
-	if type == 0 then
+	if type == 1 then
 		local ip = tostring(minetest.get_player_ip(name));
 		basic_vote.kicklist[ip] = minetest.get_gametime(); -- remembers start time
 		minetest.kick_player(name, reason)
 			
-	elseif type == 1 then
+	elseif type == 2 then
 	
 		local privs = core.get_player_privs(name);privs.interact = false
 		core.set_player_privs(name, privs);	minetest.auth_reload()
 		
-	elseif type == 2 then
+	elseif type == 3 then
 	
 		local privs = core.get_player_privs(name);privs.interact = true;
 		core.set_player_privs(name, privs);	minetest.auth_reload()
 	
-	elseif type == 3 then
+	elseif type == 4 then
 	
 		local player = minetest.get_player_by_name(name); if not player then return end
 		player:set_hp(0);
 		
-	elseif type == 4 then
+	elseif type == 5 then
 		
 		local player = minetest.get_player_by_name(name); if not player then return end
 		if not vote_poison_state[name] then
 			basic_vote_poison(name);
 		end
 
-	elseif type == 5 then
+	elseif type == 6 then
 		
 		local player = minetest.get_player_by_name(name); if not player then return end
 		local vname = basic_vote.vote.voter; local vplayer = minetest.get_player_by_name(vname);
 		if not vplayer then return end
 		player:setpos(vplayer:getpos());
 		
-	elseif type == 6 then
+	elseif type == 7 then
 		
 		local player = minetest.get_player_by_name(name); if not player then return end
 		player:set_nametag_attributes({color = basic_vote.vote.reason});
 		
-	elseif type == 7 then
+	elseif type == 8 then
 		local player = minetest.get_player_by_name(name); if not player then return end
 		basic_vote.talklist[name]=1;
 		
-	elseif type == 8 then
+	elseif type == 9 then
 		local player = minetest.get_player_by_name(name); if not player then return end
 		basic_vote.talklist[name]=nil;
 	
-	elseif type == 9 then
+	elseif type == 10 then
 		--basic_vote.huds[name]=player:hud_add(hud_definition);
 		
 	end
