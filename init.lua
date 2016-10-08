@@ -7,7 +7,6 @@ local basic_vote = {};
 -- DEFINE VOTE TYPES
 
 basic_vote.types = { -- [type] = { description , votes_needed , timeout, command, help_description}
-
 [1] = {"ban %s for 2 minutes" , -3 , 30, "ban", "Ban player for 2 minutes"},                -- -3 means strictly more than 3 players need to vote ( so 4 or more)
 [2] = {"remove interact of %s" , 0.5, 120, "remove_interact", "Remove 'interact' privilege from player"}, -- 0.5 means at least 50% need to vote
 [3] = {"give interact to %s" , 0.5 , 120, "give_interact", "Give 'interact' privilege to player"},
@@ -17,7 +16,7 @@ basic_vote.types = { -- [type] = { description , votes_needed , timeout, command
 [7] = {"change name color of %s",-2,30,"name color","Change name of player"},
 [8] = {"mutelate %s",-2,30,"mutelate", "Mute and kill player when talking"},
 [9] = {"unmutelate",-2,30,"unmutelate","Undo effects of mutelate"},
-[10] = {"ask",0.9,30,"ask","put a question up for voting"}
+[10] = {"ask",1.0,30,"ask","put a question up for voting"}
 };
 basic_vote.modreq = 2; -- more that this number of moderators from "anticheat" mod must vote for mod to succeed
 
@@ -218,19 +217,25 @@ minetest.register_chatcommand("vote", {
 		basic_vote.vote.time = minetest.get_gametime();
 		basic_vote.vote.type = tonumber(paramt[1]);
 		-- check for text-based types
-		if basic_vote.vote.type == nil then
-			for i=1,#basic_vote.types do
-				if paramt[1] == basic_vote.types[i][4] then
-					basic_vote.vote.type = i
-				end
-			end
+		-- if basic_vote.vote.type == nil then
+			-- for i=1,#basic_vote.types do
+				-- if paramt[1] == basic_vote.types[i][4] then
+					-- basic_vote.vote.type = i
+				-- end
+			-- end
+		-- end
+		
+		if not basic_vote.types[basic_vote.vote.type] then 
+			minetest.chat_send_player(name,"Error: Invalid syntax or type. Use '/help vote' for help.")
+			return
 		end
-		if not basic_vote.vote.type then minetest.chat_send_player(name,"Error: Invalid syntax or type. Use '/help vote' for help.") return end
+		
+		-- if not basic_vote.vote.type then minetest.chat_send_player(name,"Error: Invalid syntax or type. Use '/help vote' for help.") return end
 
 		basic_vote.vote.name=paramt[2] or "an unknown player";
 		basic_vote.vote.voter = name;
 		basic_vote.vote.reason = string.match(param, "%w+ [%w_-]+ (.+)")
-		basic_vote.vote.votes_needed =  basic_vote.types[ basic_vote.vote.type ][2];
+		basic_vote.vote.votes_needed =  basic_vote.types[ basic_vote.vote.type ][2]; 
 		basic_vote.vote.timeout = basic_vote.types[ basic_vote.vote.type ][3];
 		basic_vote.vote.time_start = os.time();
 		
